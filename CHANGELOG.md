@@ -7,13 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned
-- Basic connection to NesVentory API
-- Configuration flow for setup
-- Total items sensor
-- Total value sensor
+### Added
+- API client for NesVentory communication (`api_client.py`)
+- Configuration flow for UI-based setup (`config_flow.py`)
+- Data update coordinator for efficient polling (`coordinator.py`)
+- Total items sensor (`sensor.nesventory_total_items`)
+- Total value sensor (`sensor.nesventory_total_value`)
+- Development environment setup with `.env.example`
+- Comprehensive development guide (`DEVELOPMENT.md`)
+
+### Security
+- Added `.env` and local testing files to `.gitignore`
+- Credentials never stored in code, only in Home Assistant config entries
+
+### Planned (Future Phases)
 - Quick add item service
 - Category-specific sensors
+- Location-based sensors
 - HA device import functionality
 - Area/room synchronization
 

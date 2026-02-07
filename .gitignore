@@ -46,3 +46,8 @@ htmlcov/
 secrets.yaml
 home-assistant.log
 home-assistant_v2.db
+
+# Local development
+.env
+test_config.yaml
+local_testing/
