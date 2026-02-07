@@ -1,0 +1,1 @@
+Nesventory home Assistant addon.
