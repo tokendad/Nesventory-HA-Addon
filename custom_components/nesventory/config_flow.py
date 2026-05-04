@@ -1,12 +1,11 @@
 """Config flow for NesVentory integration."""
+
 from __future__ import annotations
 
 import logging
 from typing import Any
 
-import aiohttp
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME
 from homeassistant.core import HomeAssistant
@@ -62,7 +61,9 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     return {"title": "NesVentory"}
 
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class ConfigFlow(
+    config_entries.ConfigFlow, domain=DOMAIN
+):  # pylint: disable=too-few-public-methods
     """Handle a config flow for NesVentory."""
 
     VERSION = 1

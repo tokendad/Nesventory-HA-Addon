@@ -1,6 +1,8 @@
 """DataUpdateCoordinator for NesVentory."""
+
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import timedelta
 from typing import Any
@@ -14,7 +16,9 @@ from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 _LOGGER = logging.getLogger(__name__)
 
 
-class NesVentoryDataUpdateCoordinator(DataUpdateCoordinator):
+class NesVentoryDataUpdateCoordinator(
+    DataUpdateCoordinator
+):  # pylint: disable=too-few-public-methods
     """Class to manage fetching NesVentory data."""
 
     def __init__(
@@ -41,19 +45,59 @@ class NesVentoryDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from NesVentory.
 
+        Fetches items, locations, and categories in parallel for efficiency.
+        Location and category failures are handled gracefully — they return
+        empty lists rather than failing the entire update.
+
         Returns:
             Dictionary containing all data from NesVentory
 
         Raises:
-            UpdateFailed: If update fails
+            UpdateFailed: If the core items fetch fails
 
         """
         try:
-            # Fetch all data in parallel for efficiency
-            items = await self.client.get_items()
+            # Fetch items (required), locations and categories (optional / best-effort)
+            items_coro = self.client.get_items()
+            locations_coro = self.client.get_locations()
+            categories_coro = self.client.get_categories()
+
+            items, locations_result, categories_result = await asyncio.gather(
+                items_coro,
+                locations_coro,
+                categories_coro,
+                return_exceptions=True,
+            )
+
+            # Items are required — propagate any exception as UpdateFailed
+            if isinstance(items, BaseException):
+                raise UpdateFailed(
+                    f"Error fetching items from NesVentory: {items}"
+                ) from items
+
+            # Locations / categories are best-effort; log and fall back to []
+            if isinstance(locations_result, BaseException):
+                _LOGGER.warning(
+                    "Failed to fetch locations (non-critical): %s", locations_result
+                )
+                locations: list[dict[str, Any]] = []
+            else:
+                locations = (
+                    locations_result if isinstance(locations_result, list) else []
+                )
+
+            if isinstance(categories_result, BaseException):
+                _LOGGER.warning(
+                    "Failed to fetch categories (non-critical): %s", categories_result
+                )
+                categories: list[dict[str, Any]] = []
+            else:
+                categories = (
+                    categories_result if isinstance(categories_result, list) else []
+                )
+
             total_count = len(items) if isinstance(items, list) else 0
 
-            # Calculate total value
             total_value = 0.0
             if isinstance(items, list):
                 for item in items:
@@ -64,7 +108,11 @@ class NesVentoryDataUpdateCoordinator(DataUpdateCoordinator):
                 "items": items,
                 "total_count": total_count,
                 "total_value": total_value,
+                "locations": locations,
+                "categories": categories,
             }
 
+        except UpdateFailed:
+            raise
         except Exception as err:
             raise UpdateFailed(f"Error communicating with NesVentory: {err}") from err

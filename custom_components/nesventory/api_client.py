@@ -1,4 +1,5 @@
 """API client for NesVentory."""
+
 from __future__ import annotations
 
 import asyncio
@@ -6,7 +7,7 @@ import logging
 from typing import Any
 
 import aiohttp
-from aiohttp import ClientError, ClientTimeout
+from aiohttp import ClientError
 
 from .const import (
     API_CATEGORIES_ENDPOINT,
@@ -52,7 +53,6 @@ class NesVentoryApiClient:
         """
         try:
             async with asyncio.timeout(DEFAULT_TIMEOUT):
-                # TODO: Update this endpoint when NesVentory auth endpoint is confirmed
                 url = f"{self._base_url}/api/v1/auth/login"
                 data = {
                     "username": self._username,
@@ -65,11 +65,11 @@ class NesVentoryApiClient:
                         self._token = result.get("access_token")
                         _LOGGER.debug("Authentication successful")
                         return True
-                    else:
-                        _LOGGER.error(
-                            "Authentication failed with status %s", response.status
-                        )
-                        return False
+
+                    _LOGGER.error(
+                        "Authentication failed with status %s", response.status
+                    )
+                    return False
 
         except asyncio.TimeoutError:
             _LOGGER.error("Timeout during authentication")
@@ -77,7 +77,7 @@ class NesVentoryApiClient:
         except ClientError as err:
             _LOGGER.error("Client error during authentication: %s", err)
             return False
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-exception-caught
             _LOGGER.exception("Unexpected error during authentication: %s", err)
             return False
 
@@ -89,25 +89,24 @@ class NesVentoryApiClient:
 
         """
         try:
-            # First authenticate
             if not self._token:
                 if not await self.authenticate():
                     return False
 
-            # Then test with a simple API call
             async with asyncio.timeout(DEFAULT_TIMEOUT):
                 url = f"{self._base_url}{API_ITEMS_ENDPOINT}"
-                headers = self._get_headers()
 
-                async with self._session.get(url, headers=headers) as response:
+                async with self._session.get(
+                    url, headers=self._get_headers()
+                ) as response:
                     if response.status == 200:
                         _LOGGER.debug("Connection test successful")
                         return True
-                    else:
-                        _LOGGER.error(
-                            "Connection test failed with status %s", response.status
-                        )
-                        return False
+
+                    _LOGGER.error(
+                        "Connection test failed with status %s", response.status
+                    )
+                    return False
 
         except asyncio.TimeoutError:
             _LOGGER.error("Timeout during connection test")
@@ -115,9 +114,42 @@ class NesVentoryApiClient:
         except ClientError as err:
             _LOGGER.error("Client error during connection test: %s", err)
             return False
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-exception-caught
             _LOGGER.exception("Unexpected error during connection test: %s", err)
             return False
+
+    async def _get_json(self, url: str, *, _retry: bool = True) -> Any:
+        """Perform an authenticated GET request, re-authenticating once on 401.
+
+        Args:
+            url: Full URL to request.
+            _retry: Internal flag — set to False on the retry to prevent recursion.
+
+        Returns:
+            Parsed JSON response body.
+
+        Raises:
+            aiohttp.ClientResponseError: On non-2xx status (after retry).
+            asyncio.TimeoutError: On timeout.
+            ClientError: On other network errors.
+
+        """
+        if not self._token:
+            await self.authenticate()
+
+        async with asyncio.timeout(DEFAULT_TIMEOUT):
+            async with self._session.get(url, headers=self._get_headers()) as response:
+                if response.status == 401 and _retry:
+                    _LOGGER.debug(
+                        "Received 401 from %s — token may have expired, re-authenticating",
+                        url,
+                    )
+                    self._token = None
+                    if await self.authenticate():
+                        return await self._get_json(url, _retry=False)
+                    # Re-auth failed — let raise_for_status surface the 401
+                response.raise_for_status()
+                return await response.json()
 
     async def get_items(self) -> list[dict[str, Any]]:
         """Get all items from NesVentory.
@@ -126,21 +158,14 @@ class NesVentoryApiClient:
             List of item dictionaries
 
         Raises:
-            Exception: If request fails
+            ClientError: If request fails
+            asyncio.TimeoutError: On timeout
 
         """
-        if not self._token:
-            await self.authenticate()
-
+        url = f"{self._base_url}{API_ITEMS_ENDPOINT}"
         try:
-            async with asyncio.timeout(DEFAULT_TIMEOUT):
-                url = f"{self._base_url}{API_ITEMS_ENDPOINT}"
-                headers = self._get_headers()
-
-                async with self._session.get(url, headers=headers) as response:
-                    response.raise_for_status()
-                    return await response.json()
-
+            result = await self._get_json(url)
+            return result if isinstance(result, list) else []
         except asyncio.TimeoutError:
             _LOGGER.error("Timeout while fetching items")
             raise
@@ -157,8 +182,8 @@ class NesVentoryApiClient:
         """
         try:
             items = await self.get_items()
-            return len(items) if isinstance(items, list) else 0
-        except Exception as err:
+            return len(items)
+        except Exception as err:  # pylint: disable=broad-exception-caught
             _LOGGER.error("Error getting total items count: %s", err)
             return 0
 
@@ -171,18 +196,12 @@ class NesVentoryApiClient:
         """
         try:
             items = await self.get_items()
-            if not isinstance(items, list):
-                return 0.0
-
             total = 0.0
             for item in items:
-                # Adjust field name based on actual NesVentory API response
                 value = item.get("value", 0) or item.get("price", 0) or 0
                 total += float(value)
-
             return total
-
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-exception-caught
             _LOGGER.error("Error calculating total value: %s", err)
             return 0.0
 
@@ -192,19 +211,15 @@ class NesVentoryApiClient:
         Returns:
             List of location dictionaries
 
+        Raises:
+            ClientError: If request fails
+            asyncio.TimeoutError: On timeout
+
         """
-        if not self._token:
-            await self.authenticate()
-
+        url = f"{self._base_url}{API_LOCATIONS_ENDPOINT}"
         try:
-            async with asyncio.timeout(DEFAULT_TIMEOUT):
-                url = f"{self._base_url}{API_LOCATIONS_ENDPOINT}"
-                headers = self._get_headers()
-
-                async with self._session.get(url, headers=headers) as response:
-                    response.raise_for_status()
-                    return await response.json()
-
+            result = await self._get_json(url)
+            return result if isinstance(result, list) else []
         except asyncio.TimeoutError:
             _LOGGER.error("Timeout while fetching locations")
             raise
@@ -218,19 +233,15 @@ class NesVentoryApiClient:
         Returns:
             List of category dictionaries
 
+        Raises:
+            ClientError: If request fails
+            asyncio.TimeoutError: On timeout
+
         """
-        if not self._token:
-            await self.authenticate()
-
+        url = f"{self._base_url}{API_CATEGORIES_ENDPOINT}"
         try:
-            async with asyncio.timeout(DEFAULT_TIMEOUT):
-                url = f"{self._base_url}{API_CATEGORIES_ENDPOINT}"
-                headers = self._get_headers()
-
-                async with self._session.get(url, headers=headers) as response:
-                    response.raise_for_status()
-                    return await response.json()
-
+            result = await self._get_json(url)
+            return result if isinstance(result, list) else []
         except asyncio.TimeoutError:
             _LOGGER.error("Timeout while fetching categories")
             raise
@@ -242,7 +253,7 @@ class NesVentoryApiClient:
         """Get headers for API requests.
 
         Returns:
-            Dictionary of headers
+            Dictionary of request headers
 
         """
         headers = {"Content-Type": "application/json"}

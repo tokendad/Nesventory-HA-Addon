@@ -1,0 +1,38 @@
+name: Validate
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install black isort pylint homeassistant
+
+      - name: Check formatting (black)
+        run: black --check custom_components/nesventory/
+
+      - name: Check imports (isort)
+        run: isort --check-only custom_components/nesventory/
+
+      - name: Lint (pylint)
+        run: pylint custom_components/nesventory/ --disable=C0114,C0115,C0116 || true
+
+      - name: Validate manifest
+        run: >
+          python -c "
+          import json;
+          d = json.load(open('custom_components/nesventory/manifest.json'));
+          assert 'domain' in d and 'version' in d, 'manifest missing required keys';
+          print('manifest.json OK')
+          "

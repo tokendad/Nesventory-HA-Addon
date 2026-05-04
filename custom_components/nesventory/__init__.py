@@ -1,4 +1,5 @@
 """The NesVentory integration."""
+
 from __future__ import annotations
 
 import logging
@@ -6,6 +7,7 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api_client import NesVentoryApiClient
@@ -33,7 +35,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Authenticate
     if not await client.authenticate():
         _LOGGER.error("Failed to authenticate with NesVentory")
-        return False
+        raise ConfigEntryAuthFailed("Invalid credentials for NesVentory")
 
     # Initialize data coordinator
     coordinator = NesVentoryDataUpdateCoordinator(hass, client)

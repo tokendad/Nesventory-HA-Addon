@@ -1,0 +1,8 @@
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+known_third_party = ["aiohttp", "voluptuous"]
+known_first_party = ["custom_components"]

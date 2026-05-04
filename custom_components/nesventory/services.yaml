@@ -1,0 +1,51 @@
+add_quick_item:
+  name: Add Quick Item
+  description: Quickly add an item to NesVentory inventory.
+  fields:
+    name:
+      name: Item Name
+      description: Name of the item to add.
+      required: true
+      example: "Nintendo Switch"
+      selector:
+        text:
+    quantity:
+      name: Quantity
+      description: Number of items to add.
+      required: false
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 999
+          mode: box
+    location:
+      name: Location
+      description: Location/room where the item is stored.
+      required: false
+      example: "Living Room"
+      selector:
+        text:
+
+import_ha_devices:
+  name: Import HA Devices
+  description: Import Home Assistant devices into NesVentory as inventory items.
+  fields:
+    area_id:
+      name: Area
+      description: Only import devices from this area (optional).
+      required: false
+      selector:
+        area:
+    overwrite:
+      name: Overwrite Existing
+      description: Overwrite items that already exist in NesVentory.
+      required: false
+      default: false
+      selector:
+        boolean:
+
+sync_ha_areas:
+  name: Sync HA Areas
+  description: Synchronize Home Assistant areas to NesVentory locations.
+  fields: {}

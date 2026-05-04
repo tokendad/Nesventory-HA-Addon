@@ -1,9 +1,8 @@
 """Constants for the NesVentory integration."""
 
-DOMAIN = "nesventory"
+# CONF_URL, CONF_USERNAME, CONF_PASSWORD come from homeassistant.const — do not redefine here.
 
-# Configuration
-CONF_URL = "url"
+DOMAIN = "nesventory"
 
 # Defaults
 DEFAULT_SCAN_INTERVAL = 60  # seconds

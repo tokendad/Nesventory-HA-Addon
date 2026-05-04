@@ -41,13 +41,13 @@ Create a symlink from your HA config directory to this repository:
 
 ```bash
 # Navigate to your Home Assistant config directory
-cd /path/to/homeassistant/config
+cd /data/Hassio
 
 # Create custom_components directory if it doesn't exist
 mkdir -p custom_components
 
 # Symlink the integration
-ln -s /data/HA-Nesventory/custom_components/nesventory custom_components/nesventory
+ln -s "/data/Projects/Nesventory /HA-Nesventory/custom_components/nesventory" custom_components/nesventory
 ```
 
 #### Method 2: Manual Copy
@@ -55,7 +55,7 @@ ln -s /data/HA-Nesventory/custom_components/nesventory custom_components/nesvent
 Copy the integration to your HA custom_components:
 
 ```bash
-cp -r custom_components/nesventory /path/to/homeassistant/config/custom_components/
+cp -r custom_components/nesventory /data/Hassio/custom_components/
 ```
 
 ### 3. Restart Home Assistant
@@ -88,7 +88,7 @@ View Home Assistant logs for debugging:
 
 ```bash
 # From HA config directory
-tail -f home-assistant.log | grep nesventory
+tail -f /data/Hassio/home-assistant.log | grep nesventory
 ```
 
 Or use the UI: `Settings` → `System` → `Logs`

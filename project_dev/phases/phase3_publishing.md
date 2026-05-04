@@ -1,17 +1,19 @@
 # Phase 3: Publishing & Distribution
 
-**Goal:** Publish integration to HACS and ensure discoverability.
+**Goal:** Publish the integration to HACS and ensure discoverability.
 
-## Status: Not Started
+## Status: Not Started — depends on Phase 1 + Phase 2
+## Last Updated: 2026-05-04
 
 ## Dependencies
-- Phase 1 must be completed
+- Phase 1 implementation must be complete, including the remaining API verification follow-up items
 - Phase 2 features should be stable
-- All testing must pass
+- Automated tests and manual validation must pass before release
 
 ## Objectives
 - [ ] Finalize repository structure
 - [ ] Complete documentation
+- [ ] Add validation and CI workflows
 - [ ] Submit to HACS default repository
 - [ ] Create release process
 
@@ -29,27 +31,27 @@
 - Easier maintenance
 
 **Requirements:**
-✓ Repository is public
-✓ Separate from main NesVentory repo
-- Needs proper GitHub releases
+- [x] Repository is public
+- [x] Separate from main NesVentory repo
+- [ ] Add proper GitHub releases
 
 ### 2. Documentation
 Create comprehensive user documentation.
 
 **README.md Requirements:**
-- [ ] Clear project description
+- [x] Clear project description
 - [ ] Screenshots of integration in HA
-- [ ] Installation instructions (HACS + Manual)
-- [ ] Configuration guide with examples
+- [x] Installation instructions (HACS + Manual)
+- [x] Configuration guide with examples
 - [ ] Troubleshooting section
-- [ ] Feature list
-- [ ] Requirements (HA version, NesVentory version)
-- [ ] Badge for HACS
+- [x] Feature list
+- [x] Requirements (HA version, NesVentory version)
+- [x] Badge for HACS
 
 **Additional Docs:**
-- [ ] `CONTRIBUTING.md` - Contribution guidelines
-- [ ] `CHANGELOG.md` - Version history
-- [ ] `LICENSE` - License file (if not present)
+- [ ] `CONTRIBUTING.md` - Does not exist yet; create contribution guidelines
+- [x] `CHANGELOG.md` - Version history exists
+- [ ] `LICENSE` - Does not exist yet; add before HACS release
 
 ### 3. HACS Requirements Validation
 
@@ -59,25 +61,32 @@ Create comprehensive user documentation.
 ✓ Root: custom_components/
 ✓ Root: README.md
 - Root: info.md (optional, prettier display in HACS)
+- Root: CONTRIBUTING.md (recommended, currently missing)
+- Root: LICENSE (needed before release, currently missing)
 ```
 
-**hacs.json Validation:**
+**Current `hacs.json`:**
 ```json
 {
   "name": "NesVentory",
   "render_readme": true,
-  "filename": "nesventory.zip"
+  "homeassistant": "2024.1.0"
 }
 ```
 
+**Notes:**
+- The current file does **not** include a `filename` key
+- For this integration repository, `filename` may not be needed unless release packaging is changed to require a zip asset
+- The `homeassistant` key already documents the minimum supported Home Assistant version
+
 **manifest.json Validation:**
-- [ ] Valid domain name
-- [ ] Correct version format (semver)
-- [ ] Working documentation URL
-- [ ] Working issue tracker URL
-- [ ] Correct iot_class
-- [ ] All requirements listed
-- [ ] Code owners specified
+- [x] Valid domain name
+- [ ] Update version from `0.0.1` to `0.1.0` for the first release
+- [x] Working documentation URL
+- [x] Working issue tracker URL
+- [x] Correct `iot_class`
+- [x] Requirements listed
+- [x] Code owners specified
 
 ### 4. Quality Assurance
 
@@ -97,14 +106,26 @@ Create comprehensive user documentation.
 - [ ] Test sensor updates
 
 **Validation Tools:**
-- [ ] Run `hassfest` validation
-- [ ] Check with HACS action (GitHub workflow)
+- [ ] Run `python3 -m script.hassfest` (or equivalent hassfest workflow) to validate `manifest.json`
+- [ ] Add HACS validation using `hacs/action` in GitHub Actions
 
-### 5. Versioning & Releases
+### 5. GitHub Actions CI
+Create `.github/workflows/` for repeatable validation on pull requests.
+
+**Minimum Workflows:**
+- [ ] Hassfest validation workflow
+- [ ] HACS validation workflow
+- [ ] PR lint workflow running at minimum `pylint` and `black --check`
+
+**Notes:**
+- No project CI workflow is in place yet
+- CI should block obvious metadata and style regressions before release
+
+### 6. Versioning & Releases
 
 **Semantic Versioning:**
 - Use format: `MAJOR.MINOR.PATCH`
-- Start with `0.1.0` for initial release
+- Start with `0.1.0` for the initial release
 - Document breaking changes clearly
 
 **GitHub Releases:**
@@ -114,20 +135,21 @@ Create comprehensive user documentation.
 - [ ] Attach any necessary assets
 
 **First Release Checklist:**
-- [ ] Version `0.1.0` in manifest.json
+- [ ] Version `0.1.0` in `custom_components/nesventory/manifest.json` (currently `0.0.1`)
 - [ ] Complete CHANGELOG.md entry
 - [ ] All Phase 1 features working
+- [ ] Phase 2 scope complete enough for intended first release
 - [ ] Documentation complete
 - [ ] Create Git tag `v0.1.0`
 - [ ] Create GitHub release
 
-### 6. HACS Submission
+### 7. HACS Submission
 
 **Pre-submission:**
-- [ ] Repository is public
+- [x] Repository is public
 - [ ] All requirements met
 - [ ] At least one release published
-- [ ] README has clear installation instructions
+- [x] README has installation instructions
 
 **Submission Process:**
 1. Fork `hacs/default` repository
@@ -138,11 +160,11 @@ Create comprehensive user documentation.
 6. Merge approved
 
 **Post-submission:**
-- [ ] Update README with HACS badge
-- [ ] Update documentation with HACS install method
+- [x] README already includes a HACS badge
+- [x] README already includes a HACS/custom repository install method
 - [ ] Announce in community forums (optional)
 
-### 7. Maintenance Plan
+### 8. Maintenance Plan
 
 **Ongoing Tasks:**
 - Monitor GitHub issues

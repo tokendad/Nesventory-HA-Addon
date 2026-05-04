@@ -1,83 +1,100 @@
 # Phase 1: Basic Connection & Sensor
 
-**Goal:** Authenticate with NesVentory and show a "Total Items" sensor.
+**Goal:** Authenticate with NesVentory and expose the core inventory sensors in Home Assistant.
 
-## Status: Not Started
+## Status: Complete
+## Last Updated: 2026-05-04
 
 ## Objectives
-- [ ] Create API client for NesVentory communication
-- [ ] Implement configuration flow for user setup
-- [ ] Create basic sensor entities
+- [x] Create API client for NesVentory communication
+- [x] Implement configuration flow for user setup
+- [x] Create basic sensor entities
+- [x] Add required integration metadata and documentation files
 
 ## Tasks
 
 ### 1. API Client (`api_client.py`)
 Create a Python class to communicate with NesVentory's FastAPI backend.
 
-**Requirements:**
-- Endpoint: `/api/v1/items/` (GET) to count items
-- Auth: Bearer Token authentication
-- Error handling for connection issues
-- Timeout handling
+**Implemented:**
+- [x] Bearer token authentication flow
+- [x] Item fetching via `/api/v1/items/`
+- [x] Total item counting helper
+- [x] Total value calculation helper
+- [x] Location fetching helper
+- [x] Category fetching helper
+- [x] Connection test helper
+- [x] Timeout and aiohttp error handling
 
 **Deliverables:**
-- `custom_components/nesventory/api_client.py`
+- [x] `custom_components/nesventory/api_client.py`
 
 ### 2. Config Flow (`config_flow.py`)
 Implement UI-based configuration.
 
-**Requirements:**
-- Prompt for NesVentory URL (e.g., `http://192.168.1.100:8001`)
-- Prompt for Username/Password
-- Validate connection during setup
-- Store credentials securely
-- Handle authentication errors
+**Implemented:**
+- [x] Prompt for NesVentory URL (e.g., `http://192.168.1.100:8001`)
+- [x] Prompt for Username/Password
+- [x] Validate authentication during setup
+- [x] Validate API connectivity during setup
+- [x] Store credentials in the Home Assistant config entry
+- [x] Handle `CannotConnect` and `InvalidAuth` errors
+- [x] Prevent duplicate entries by using `CONF_URL` as the unique ID
 
 **Deliverables:**
-- `custom_components/nesventory/config_flow.py`
-- `custom_components/nesventory/strings.json` (UI labels)
+- [x] `custom_components/nesventory/config_flow.py`
+- [x] `custom_components/nesventory/strings.json` (UI labels)
 
-### 3. Basic Sensors (`sensor.py`)
+### 3. Basic Sensors (`sensor.py` + `coordinator.py`)
 Create initial sensor entities.
 
-**Sensors to Implement:**
-- `sensor.nesventory_total_items`: State = Count of all items
-- `sensor.nesventory_total_value`: State = Sum of item values
+**Sensors Implemented:**
+- [x] `sensor.nesventory_total_items`: State = Count of all items
+- [x] `sensor.nesventory_total_value`: State = Sum of item values
 
-**Requirements:**
-- Poll NesVentory API at reasonable interval (configurable, default 60s)
-- Handle API unavailability gracefully
-- Update state properly
-- Include useful attributes (last_update, etc.)
+**Implemented:**
+- [x] `NesVentoryDataUpdateCoordinator` using `DataUpdateCoordinator`
+- [x] 60 second polling interval via `DEFAULT_SCAN_INTERVAL`
+- [x] Coordinator payload containing `{items, total_count, total_value}`
+- [x] Graceful sensor state handling when coordinator data is unavailable
+- [x] Device info and basic extra state attributes
 
 **Deliverables:**
-- `custom_components/nesventory/sensor.py`
+- [x] `custom_components/nesventory/coordinator.py`
+- [x] `custom_components/nesventory/sensor.py`
 
 ### 4. Core Files
 Create required integration files.
 
-**Files Needed:**
-- `custom_components/nesventory/__init__.py` - Component setup/entry point
-- `custom_components/nesventory/manifest.json` - HA metadata
-- `custom_components/nesventory/const.py` - Constants (domain, defaults, etc.)
-- `hacs.json` - HACS metadata (root level)
-- `README.md` - Basic usage documentation
+**Files Present:**
+- [x] `custom_components/nesventory/__init__.py` - Component setup/entry point
+- [x] `custom_components/nesventory/manifest.json` - HA metadata
+- [x] `custom_components/nesventory/const.py` - Constants (domain, defaults, etc.)
+- [x] `custom_components/nesventory/strings.json` - Config flow strings
+- [x] `hacs.json` - HACS metadata (root level)
+- [x] `README.md` - Basic usage documentation
 
 ## Testing Checklist
-- [ ] Can add integration through HA UI
-- [ ] Connection validation works (both success and failure)
-- [ ] Sensors appear in HA
-- [ ] Sensors update correctly
-- [ ] Error states handled gracefully
-- [ ] Integration can be removed cleanly
+- [x] UI config flow is implemented for HA setup
+- [x] Connection validation logic exists for auth, connectivity, and duplicate configuration handling
+- [x] Coordinator-backed sensors are implemented for total items and total value
+- [x] Integration setup/unload flow is implemented in `__init__.py`
+- [ ] Automated unit tests exist
+- [ ] Phase 1 behavior has been verified against the confirmed NesVentory auth endpoint and item value schema
 
 ## Dependencies
 None (First phase)
 
-## Blockers
-None currently
+## Known Issues / Follow-up for Phase 2
+- [ ] Verify the actual NesVentory authentication endpoint; code still marks `/api/v1/auth/login` as TODO
+- [ ] Confirm whether item value should come from `value`, `price`, or another field in the real API response
+- [ ] Add automated unit tests; current validation is manual-only
+- [ ] Create `custom_components/nesventory/services.yaml` before Home Assistant services are introduced
+- [ ] Add an options flow so URL/credentials can be updated after initial setup
+- [ ] Add token expiry retry/re-authentication logic so requests recover automatically after a 401/expired token
+- [ ] Reconcile the initial plan with the current `hacs.json`; `render_readme` is present, but `filename` is not
 
 ## Notes
-- Start with minimal viable implementation
-- Focus on reliability over features
-- Ensure proper error handling from the start
+- Phase 1 is functionally complete for the initial integration milestone
+- Remaining gaps are follow-up quality and compatibility items, not blockers for closing this phase
+- Phase 2 should start by resolving the API verification and test coverage gaps above

@@ -1,4 +1,5 @@
 """Sensor platform for NesVentory."""
+
 from __future__ import annotations
 
 import logging
@@ -93,7 +94,7 @@ class NesVentoryTotalValueSensor(CoordinatorEntity, SensorEntity):
     _attr_name = "Total Value"
     _attr_icon = "mdi:cash"
     _attr_device_class = SensorDeviceClass.MONETARY
-    _attr_state_class = SensorStateClass.TOTAL
+    _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = CURRENCY_DOLLAR
 
     def __init__(

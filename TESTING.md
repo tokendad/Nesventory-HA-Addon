@@ -19,13 +19,13 @@ From your HA config directory (typically `/config`):
 mkdir -p custom_components
 
 # Copy the integration
-cp -r /data/HA-Nesventory/custom_components/nesventory custom_components/
+cp -r "/data/Projects/Nesventory /HA-Nesventory/custom_components/nesventory" custom_components/
 ```
 
 Or use a symlink for easier development:
 
 ```bash
-ln -s /data/HA-Nesventory/custom_components/nesventory custom_components/nesventory
+ln -s "/data/Projects/Nesventory /HA-Nesventory/custom_components/nesventory" custom_components/nesventory
 ```
 
 ### 2. Restart Home Assistant
@@ -98,10 +98,10 @@ Filter for: `nesventory`
 ### Via CLI
 ```bash
 # Real-time log watching
-tail -f /config/home-assistant.log | grep nesventory
+tail -f /data/Hassio/home-assistant.log | grep nesventory
 
 # Or just grep recent logs
-grep nesventory /config/home-assistant.log
+grep nesventory /data/Hassio/home-assistant.log
 ```
 
 ### Enable Debug Logging
