@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-05-04
+
 ### Phase 2 — Advanced Sensors & Services
 
 #### Added
@@ -22,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Auto-reload on options change**: scan interval and sensor list update without HA restart
 - Unit test skeleton (`tests/conftest.py`, `tests/test_api_client.py`, `tests/test_coordinator.py`)
 
-### Phase 1 (prior)
+### Phase 1
 
 #### Added
 - `translations/en.json` — required by HA UI translation system (mirrors `strings.json`)
@@ -43,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - No credentials, tokens, or IPs introduced in any file
 
-## [0.1.0] - TBD
+## [0.1.0] - 2025-01-01
 
 ### Added
 - Initial project structure
@@ -51,5 +53,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Development documentation
 - Project planning and phase breakdown
 
-[Unreleased]: https://github.com/tokendad/Nesventory-HA-Addon/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/tokendad/Nesventory-HA-Addon/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/tokendad/Nesventory-HA-Addon/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/tokendad/Nesventory-HA-Addon/releases/tag/v0.1.0

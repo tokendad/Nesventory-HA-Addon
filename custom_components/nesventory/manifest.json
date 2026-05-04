@@ -7,7 +7,7 @@
   "issue_tracker": "https://github.com/tokendad/Nesventory-HA-Addon/issues",
   "iot_class": "local_polling",
   "requirements": [],
-  "version": "0.0.1",
+  "version": "0.2.0",
   "dependencies": [],
   "after_dependencies": []
 }

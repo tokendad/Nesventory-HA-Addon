@@ -2,27 +2,28 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 [![GitHub Release](https://img.shields.io/github/release/tokendad/Nesventory-HA-Addon.svg)](https://github.com/tokendad/Nesventory-HA-Addon/releases)
+[![CI](https://github.com/tokendad/Nesventory-HA-Addon/actions/workflows/validate.yml/badge.svg)](https://github.com/tokendad/Nesventory-HA-Addon/actions/workflows/validate.yml)
 
 A Home Assistant integration for [NesVentory](https://github.com/tokendad/NesVentory), enabling seamless interaction between your inventory management system and smart home.
 
 ## Features
 
-### Current Features
-- 🚧 **In Development** - Initial setup and structure
-
-### Planned Features
+### ✅ Implemented (v0.2.0)
 
 #### NesVentory → Home Assistant
-- 📊 **Dashboard Sensors** - Display total items, total value, and category counts
-- 🗣️ **Voice Commands** - Add items using Home Assistant Assist/voice
-- 🔔 **Low Stock Alerts** - Trigger automations when inventory runs low
-- 📍 **Room Context** - Use presence detection for room-based inventory views
+- 📊 **Dashboard Sensors** — Total items, total value, per-category counts, per-location counts
+- 🗣️ **Voice Commands** — Add items using `nesventory.add_quick_item` via HA Assist/automations
+- 🔔 **Rich Attributes** — Items by status, category breakdown, value by category on every sensor
+- ⚙️ **Options Flow** — Reconfigure scan interval and tracked categories/locations without restart
 
 #### Home Assistant → NesVentory (Bidirectional Sync)
-- 📱 **Device Import** - Bulk import HA devices with rich metadata (manufacturer, model, serial numbers)
-- 🏠 **Area Synchronization** - Auto-sync HA rooms/areas to NesVentory locations
-- 🔧 **Smart Home Asset Management** - Track all smart home devices in your inventory
-- 📝 **Rich Metadata** - Leverage HA's device information for better tracking
+- 📱 **Device Import** — Bulk-import HA device registry entries via `nesventory.import_ha_devices`
+- 🏠 **Area Synchronization** — Push HA areas to NesVentory locations via `nesventory.sync_ha_areas`
+
+### 🔜 Planned (Phase 3)
+- 🔔 **Low Stock Alerts** — Trigger automations when inventory drops below threshold
+- 📍 **Room Context** — Presence-based room-scoped inventory views
+- 📦 **HACS Default Repository** — Submission to HACS default store
 
 ## Requirements
 
@@ -61,30 +62,98 @@ A Home Assistant integration for [NesVentory](https://github.com/tokendad/NesVen
    - **Password**: Your NesVentory password
 5. Click **Submit**
 
-### Available Sensors (Planned)
+### Options (Reconfiguration)
 
-- `sensor.nesventory_total_items` - Total number of items in inventory
-- `sensor.nesventory_total_value` - Total value of all items
-- `sensor.nesventory_category_*` - Items by category (configurable)
-- `sensor.nesventory_location_*` - Items by location (configurable)
+After setup, click **Configure** on the NesVentory integration card to adjust:
 
-### Services (Planned)
+| Option | Default | Description |
+|---|---|---|
+| Scan interval | 60 s | How often to poll NesVentory (30–3600 s) |
+| Tracked categories | _(none)_ | Category names to create individual sensors for |
+| Tracked locations | _(none)_ | Location names to create individual sensors for |
 
-- `nesventory.add_quick_item` - Quickly add an item via voice or automation
-- `nesventory.import_ha_devices` - Import Home Assistant devices into NesVentory
-- `nesventory.sync_ha_areas` - Synchronize HA areas to NesVentory locations
+Changes apply immediately — no HA restart required.
+
+### Available Sensors
+
+| Entity ID | Description | Attributes |
+|---|---|---|
+| `sensor.nesventory_total_items` | Total item count | `items_by_status`, `items_by_category` (top 5) |
+| `sensor.nesventory_total_value` | Total inventory value | `value_by_category` (top 5) |
+| `sensor.nesventory_category_<name>` | Items in a category | Configured via options flow |
+| `sensor.nesventory_location_<name>` | Items at a location | Configured via options flow |
+
+### Services
+
+#### `nesventory.add_quick_item`
+
+Quickly add an inventory item from an automation or voice command.
+
+```yaml
+service: nesventory.add_quick_item
+data:
+  name: "Philips Hue Bulb"
+  quantity: 2
+  location: "Office"       # optional
+  category: "Smart Lights" # optional
+```
+
+#### `nesventory.import_ha_devices`
+
+Bulk-import Home Assistant devices into NesVentory as inventory items.
+
+```yaml
+service: nesventory.import_ha_devices
+data:
+  area_filter: "Living Room" # optional — leave blank to import all devices
+```
+
+#### `nesventory.sync_ha_areas`
+
+Push all Home Assistant areas to NesVentory as locations (skips existing ones).
+
+```yaml
+service: nesventory.sync_ha_areas
+```
 
 ## Development
 
-This integration is under active development. Check the [project development documentation](project_dev/PROJECT_OVERVIEW.md) for detailed planning and roadmap.
-
 ### Development Phases
 
-- **Phase 1**: Basic Connection & Sensors
-- **Phase 2**: Advanced Features & Bidirectional Sync
-- **Phase 3**: Publishing & Distribution
+| Phase | Status | Description |
+|---|---|---|
+| **Phase 1** | ✅ Complete | Core sensors, config flow, CI, translations |
+| **Phase 2** | ✅ Complete | Services, options flow, dynamic sensors, unit tests |
+| **Phase 3** | 🔜 Planned | HACS default repo, full test coverage (>80%), README polish |
 
-See [project_dev/phases/](project_dev/phases/) for detailed phase documentation.
+See [project_dev/phases/](project_dev/phases/) for detailed documentation on each phase.
+
+### Running Tests
+
+```bash
+pip install pytest pytest-asyncio aiohttp voluptuous
+pytest tests/ -v
+```
+
+### Code Quality
+
+```bash
+pip install black isort pylint
+black custom_components/nesventory/
+isort custom_components/nesventory/
+pylint custom_components/nesventory/
+```
+
+### Debug Logging
+
+Add to your HA `configuration.yaml`, then restart:
+
+```yaml
+logger:
+  default: info
+  logs:
+    custom_components.nesventory: debug
+```
 
 ## Contributing
 
@@ -102,7 +171,7 @@ Contributions are welcome! Please:
 
 ## License
 
-This project is licensed under the same license as the main NesVentory project.
+This project is licensed under the [MIT License](LICENSE).
 
 ## Acknowledgments
 
