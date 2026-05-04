@@ -19,5 +19,18 @@
     "abort": {
       "already_configured": "NesVentory is already configured"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "NesVentory Options",
+        "description": "Configure how NesVentory polls data and which sensors to create.",
+        "data": {
+          "scan_interval": "Scan interval (seconds)",
+          "tracked_categories": "Category sensors to create",
+          "tracked_locations": "Location sensors to create"
+        }
+      }
+    }
   }
 }

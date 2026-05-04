@@ -25,12 +25,14 @@ class NesVentoryDataUpdateCoordinator(
         self,
         hass: HomeAssistant,
         client: NesVentoryApiClient,
+        scan_interval: int = DEFAULT_SCAN_INTERVAL,
     ) -> None:
         """Initialize the coordinator.
 
         Args:
             hass: HomeAssistant instance
             client: NesVentory API client
+            scan_interval: Update interval in seconds
 
         """
         self.client = client
@@ -39,7 +41,7 @@ class NesVentoryDataUpdateCoordinator(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
+            update_interval=timedelta(seconds=scan_interval),
         )
 
     async def _async_update_data(self) -> dict[str, Any]:

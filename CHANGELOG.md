@@ -7,7 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Phase 2 — Advanced Sensors & Services
+
+#### Added
+- **Options flow**: reconfigure scan interval, category sensors, and location sensors via HA UI
+- **`add_quick_item` service**: create inventory items from automations or voice commands
+- **`import_ha_devices` service**: bulk-import HA device registry entries into NesVentory
+- **`sync_ha_areas` service**: sync HA areas to NesVentory locations (creates missing locations)
+- **Category sensors**: per-category item count sensors (configured via options flow)
+- **Location sensors**: per-location item count sensors (configured via options flow)
+- **Enhanced attributes** on Total Items: `items_by_status`, `items_by_category` (top 5)
+- **Enhanced attributes** on Total Value: `value_by_category` (top 5)
+- **Configurable scan interval**: adjustable in options flow (30–3600 s, default 60 s)
+- **Auto-reload on options change**: scan interval and sensor list update without HA restart
+- Unit test skeleton (`tests/conftest.py`, `tests/test_api_client.py`, `tests/test_coordinator.py`)
+
+### Phase 1 (prior)
+
+#### Added
 - `translations/en.json` — required by HA UI translation system (mirrors `strings.json`)
 - `services.yaml` — stub definitions for Phase 2 services: `add_quick_item`, `import_ha_devices`, `sync_ha_areas`
 - `LICENSE` — MIT license

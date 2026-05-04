@@ -11,7 +11,9 @@ from aiohttp import ClientError
 
 from .const import (
     API_CATEGORIES_ENDPOINT,
+    API_ITEMS_CREATE_ENDPOINT,
     API_ITEMS_ENDPOINT,
+    API_LOCATIONS_CREATE_ENDPOINT,
     API_LOCATIONS_ENDPOINT,
     DEFAULT_TIMEOUT,
 )
@@ -247,6 +249,111 @@ class NesVentoryApiClient:
             raise
         except ClientError as err:
             _LOGGER.error("Error fetching categories: %s", err)
+            raise
+
+    async def create_item(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        name: str,
+        quantity: int = 1,
+        location: str | None = None,
+        category: str | None = None,
+        status: str = "Review Needed",
+    ) -> dict[str, Any]:
+        """Create a new item in NesVentory.
+
+        Args:
+            name: Item name (required)
+            quantity: Number of items (default 1)
+            location: Location name or ID (optional)
+            category: Category name or ID (optional)
+            status: Item status (default "Review Needed")
+
+        Returns:
+            Created item as a dict
+
+        Raises:
+            ClientError: If request fails
+            asyncio.TimeoutError: On timeout
+
+        """
+        if not self._token:
+            await self.authenticate()
+
+        payload: dict[str, Any] = {
+            "name": name,
+            "quantity": quantity,
+            "status": status,
+        }
+        if location:
+            payload["location"] = location
+        if category:
+            payload["category"] = category
+
+        try:
+            async with asyncio.timeout(DEFAULT_TIMEOUT):
+                url = f"{self._base_url}{API_ITEMS_CREATE_ENDPOINT}"
+                async with self._session.post(
+                    url, json=payload, headers=self._get_headers()
+                ) as response:
+                    if response.status == 401 and self._token:
+                        self._token = None
+                        if await self.authenticate():
+                            async with asyncio.timeout(DEFAULT_TIMEOUT):
+                                async with self._session.post(
+                                    url, json=payload, headers=self._get_headers()
+                                ) as retry_response:
+                                    retry_response.raise_for_status()
+                                    return await retry_response.json()
+                    response.raise_for_status()
+                    return await response.json()
+        except asyncio.TimeoutError:
+            _LOGGER.error("Timeout while creating item '%s'", name)
+            raise
+        except ClientError as err:
+            _LOGGER.error("Error creating item '%s': %s", name, err)
+            raise
+
+    async def create_location(self, name: str) -> dict[str, Any]:
+        """Create a new location in NesVentory.
+
+        Args:
+            name: Location name
+
+        Returns:
+            Created location as a dict
+
+        Raises:
+            ClientError: If request fails
+            asyncio.TimeoutError: On timeout
+
+        """
+        if not self._token:
+            await self.authenticate()
+
+        payload = {"name": name}
+
+        try:
+            async with asyncio.timeout(DEFAULT_TIMEOUT):
+                url = f"{self._base_url}{API_LOCATIONS_CREATE_ENDPOINT}"
+                async with self._session.post(
+                    url, json=payload, headers=self._get_headers()
+                ) as response:
+                    if response.status == 401 and self._token:
+                        self._token = None
+                        if await self.authenticate():
+                            async with asyncio.timeout(DEFAULT_TIMEOUT):
+                                async with self._session.post(
+                                    url, json=payload, headers=self._get_headers()
+                                ) as retry_response:
+                                    retry_response.raise_for_status()
+                                    return await retry_response.json()
+                    response.raise_for_status()
+                    return await response.json()
+        except asyncio.TimeoutError:
+            _LOGGER.error("Timeout while creating location '%s'", name)
+            raise
+        except ClientError as err:
+            _LOGGER.error("Error creating location '%s': %s", name, err)
             raise
 
     def _get_headers(self) -> dict[str, str]:

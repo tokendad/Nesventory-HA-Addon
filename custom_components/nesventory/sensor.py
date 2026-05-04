@@ -11,15 +11,30 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CURRENCY_DOLLAR
+from homeassistant.const import CONF_URL, CURRENCY_DOLLAR
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import (
+    CONF_TRACKED_CATEGORIES,
+    CONF_TRACKED_LOCATIONS,
+    DOMAIN,
+)
 from .coordinator import NesVentoryDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _device_info(entry: ConfigEntry) -> dict[str, Any]:
+    """Build the shared device info dict for all NesVentory sensors."""
+    return {
+        "identifiers": {(DOMAIN, entry.entry_id)},
+        "name": "NesVentory",
+        "manufacturer": "NesVentory",
+        "model": "Inventory System",
+        "configuration_url": entry.data.get(CONF_URL),
+    }
 
 
 async def async_setup_entry(
@@ -30,11 +45,18 @@ async def async_setup_entry(
     """Set up NesVentory sensors from a config entry."""
     coordinator: NesVentoryDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    # Create sensor entities
-    entities = [
+    entities: list[SensorEntity] = [
         NesVentoryTotalItemsSensor(coordinator, entry),
         NesVentoryTotalValueSensor(coordinator, entry),
     ]
+
+    # Add category sensors for each tracked category
+    for category_name in entry.options.get(CONF_TRACKED_CATEGORIES, []):
+        entities.append(NesVentoryCategorySensor(coordinator, entry, category_name))
+
+    # Add location sensors for each tracked location
+    for location_name in entry.options.get(CONF_TRACKED_LOCATIONS, []):
+        entities.append(NesVentoryLocationSensor(coordinator, entry, location_name))
 
     async_add_entities(entities)
 
@@ -52,22 +74,10 @@ class NesVentoryTotalItemsSensor(CoordinatorEntity, SensorEntity):
         coordinator: NesVentoryDataUpdateCoordinator,
         entry: ConfigEntry,
     ) -> None:
-        """Initialize the sensor.
-
-        Args:
-            coordinator: Data update coordinator
-            entry: Config entry
-
-        """
+        """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_total_items"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": "NesVentory",
-            "manufacturer": "NesVentory",
-            "model": "Inventory System",
-            "configuration_url": entry.data.get("url"),
-        }
+        self._attr_device_info = _device_info(entry)
 
     @property
     def native_value(self) -> int | None:
@@ -82,7 +92,25 @@ class NesVentoryTotalItemsSensor(CoordinatorEntity, SensorEntity):
         if not self.coordinator.data:
             return {}
 
+        items: list[dict[str, Any]] = self.coordinator.data.get("items", [])
+
+        # Items by status
+        status_counts: dict[str, int] = {}
+        category_counts: dict[str, int] = {}
+        for item in items:
+            status = item.get("status", "Unknown") or "Unknown"
+            status_counts[status] = status_counts.get(status, 0) + 1
+
+            cat = item.get("category") or item.get("category_name") or "Uncategorized"
+            category_counts[cat] = category_counts.get(cat, 0) + 1
+
+        top_categories = dict(
+            sorted(category_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+        )
+
         return {
+            "items_by_status": status_counts,
+            "items_by_category": top_categories,
             "last_update": self.coordinator.last_update_success_time,
         }
 
@@ -102,22 +130,10 @@ class NesVentoryTotalValueSensor(CoordinatorEntity, SensorEntity):
         coordinator: NesVentoryDataUpdateCoordinator,
         entry: ConfigEntry,
     ) -> None:
-        """Initialize the sensor.
-
-        Args:
-            coordinator: Data update coordinator
-            entry: Config entry
-
-        """
+        """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_total_value"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": "NesVentory",
-            "manufacturer": "NesVentory",
-            "model": "Inventory System",
-            "configuration_url": entry.data.get("url"),
-        }
+        self._attr_device_info = _device_info(entry)
 
     @property
     def native_value(self) -> float | None:
@@ -132,7 +148,99 @@ class NesVentoryTotalValueSensor(CoordinatorEntity, SensorEntity):
         if not self.coordinator.data:
             return {}
 
+        items: list[dict[str, Any]] = self.coordinator.data.get("items", [])
+        category_values: dict[str, float] = {}
+        for item in items:
+            cat = item.get("category") or item.get("category_name") or "Uncategorized"
+            value = float(item.get("value", 0) or item.get("price", 0) or 0)
+            category_values[cat] = category_values.get(cat, 0.0) + value
+
+        top_by_value = dict(
+            sorted(category_values.items(), key=lambda x: x[1], reverse=True)[:5]
+        )
+
         return {
-            "last_update": self.coordinator.last_update_success_time,
+            "value_by_category": top_by_value,
             "item_count": self.coordinator.data.get("total_count", 0),
+            "last_update": self.coordinator.last_update_success_time,
         }
+
+
+class NesVentoryCategorySensor(CoordinatorEntity, SensorEntity):
+    """Sensor for item count in a specific category."""
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:tag"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(
+        self,
+        coordinator: NesVentoryDataUpdateCoordinator,
+        entry: ConfigEntry,
+        category_name: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self._category_name = category_name
+        slug = category_name.lower().replace(" ", "_")
+        self._attr_name = f"Category {category_name}"
+        self._attr_unique_id = f"{entry.entry_id}_category_{slug}"
+        self._attr_device_info = _device_info(entry)
+
+    @property
+    def native_value(self) -> int:
+        """Return item count for this category."""
+        if not self.coordinator.data:
+            return 0
+        items: list[dict[str, Any]] = self.coordinator.data.get("items", [])
+        return sum(
+            1
+            for item in items
+            if (item.get("category") or item.get("category_name") or "")
+            == self._category_name
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes."""
+        return {"category": self._category_name}
+
+
+class NesVentoryLocationSensor(CoordinatorEntity, SensorEntity):
+    """Sensor for item count in a specific location."""
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:map-marker"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(
+        self,
+        coordinator: NesVentoryDataUpdateCoordinator,
+        entry: ConfigEntry,
+        location_name: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self._location_name = location_name
+        slug = location_name.lower().replace(" ", "_")
+        self._attr_name = f"Location {location_name}"
+        self._attr_unique_id = f"{entry.entry_id}_location_{slug}"
+        self._attr_device_info = _device_info(entry)
+
+    @property
+    def native_value(self) -> int:
+        """Return item count for this location."""
+        if not self.coordinator.data:
+            return 0
+        items: list[dict[str, Any]] = self.coordinator.data.get("items", [])
+        return sum(
+            1
+            for item in items
+            if (item.get("location") or item.get("location_name") or "")
+            == self._location_name
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes."""
+        return {"location": self._location_name}

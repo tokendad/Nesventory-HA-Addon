@@ -8,12 +8,26 @@ from typing import Any
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_URL, CONF_USERNAME
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import (
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 
 from .api_client import NesVentoryApiClient
-from .const import DOMAIN
+from .const import (
+    CONF_SCAN_INTERVAL,
+    CONF_TRACKED_CATEGORIES,
+    CONF_TRACKED_LOCATIONS,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,15 +63,12 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         session=session,
     )
 
-    # Test authentication
     if not await client.authenticate():
         raise InvalidAuth
 
-    # Test connection
     if not await client.test_connection():
         raise CannotConnect
 
-    # Return info that you want to store in the config entry
     return {"title": "NesVentory"}
 
 
@@ -67,6 +78,14 @@ class ConfigFlow(
     """Handle a config flow for NesVentory."""
 
     VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> OptionsFlowHandler:
+        """Get the options flow for this handler."""
+        return OptionsFlowHandler(config_entry)
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -85,14 +104,97 @@ class ConfigFlow(
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
-                # Check if already configured
                 await self.async_set_unique_id(user_input[CONF_URL])
                 self._abort_if_unique_id_configured()
-
                 return self.async_create_entry(title=info["title"], data=user_input)
 
         return self.async_show_form(
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
+        )
+
+
+class OptionsFlowHandler(
+    config_entries.OptionsFlow
+):  # pylint: disable=too-few-public-methods
+    """Handle NesVentory options."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self._config_entry = config_entry
+        self._available_categories: list[str] = []
+        self._available_locations: list[str] = []
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Manage the options."""
+        errors: dict[str, str] = {}
+
+        # Fetch available categories and locations for the selector
+        coordinator = self.hass.data[DOMAIN].get(self._config_entry.entry_id)
+        if coordinator and coordinator.data:
+            self._available_categories = sorted(
+                {
+                    cat.get("name", "")
+                    for cat in coordinator.data.get("categories", [])
+                    if cat.get("name")
+                }
+            )
+            self._available_locations = sorted(
+                {
+                    loc.get("name", "")
+                    for loc in coordinator.data.get("locations", [])
+                    if loc.get("name")
+                }
+            )
+
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        current_scan_interval = self._config_entry.options.get(
+            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+        )
+        current_tracked_categories = self._config_entry.options.get(
+            CONF_TRACKED_CATEGORIES, []
+        )
+        current_tracked_locations = self._config_entry.options.get(
+            CONF_TRACKED_LOCATIONS, []
+        )
+
+        schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_SCAN_INTERVAL, default=current_scan_interval
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=30, max=3600, step=30, mode=NumberSelectorMode.BOX
+                    )
+                ),
+                vol.Optional(
+                    CONF_TRACKED_CATEGORIES, default=current_tracked_categories
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=self._available_categories,
+                        multiple=True,
+                        mode=SelectSelectorMode.LIST,
+                    )
+                ),
+                vol.Optional(
+                    CONF_TRACKED_LOCATIONS, default=current_tracked_locations
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=self._available_locations,
+                        multiple=True,
+                        mode=SelectSelectorMode.LIST,
+                    )
+                ),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=schema,
+            errors=errors,
         )
 
 
