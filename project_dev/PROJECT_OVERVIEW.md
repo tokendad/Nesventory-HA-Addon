@@ -4,7 +4,7 @@
 
 **Repository:** https://github.com/tokendad/Nesventory-HA-Addon.git
 **Purpose:** Home Assistant integration for NesVentory inventory management system
-**Status:** Planning/Initial Development
+**Status:** Active Development — Phase 2 complete, Phase 2b planned
 
 ## Project Structure
 
@@ -13,8 +13,9 @@ project_dev/
 ├── initial_plan.md          # Original integration plan document
 ├── PROJECT_OVERVIEW.md      # This file - project overview
 └── phases/
-    ├── phase1_basic_connection.md    # Phase 1: Core functionality
-    ├── phase2_advanced_features.md   # Phase 2: Enhanced features
+    ├── phase1_basic_connection.md    # Phase 1: Core functionality (complete)
+    ├── phase2_advanced_features.md   # Phase 2: Enhanced features (substantially complete)
+    ├── phase2b_network_discovery.md  # Phase 2b: Passive network discovery service (planned)
     └── phase3_publishing.md          # Phase 3: Release & distribution
 ```
 
@@ -34,7 +35,7 @@ project_dev/
 - Configuration flow (UI setup)
 - Basic sensors (total items, total value)
 
-**Status:** Not Started
+**Status:** Complete ✅
 
 ---
 
@@ -46,9 +47,27 @@ project_dev/
 - Category-specific sensors
 - Location-based sensors
 - Enhanced sensor attributes
+- HA device import and area sync services
+- Options flow (scan interval, tracked sensors)
+- Token refresh / reconnection handling
 
-**Status:** Not Started
-**Dependencies:** Phase 1 complete
+**Status:** Substantially Complete — test coverage and API verification pending
+**Dependencies:** Phase 1 complete ✅
+
+---
+
+### Phase 2b: Network Discovery Service
+**Goal:** Passively discover unknown network/IoT devices via HA's mDNS and SSDP caches and import them into NesVentory.
+
+**Key Features:**
+- `nesventory.discover_network_devices` service
+- SSDP (UPnP) + Zeroconf/mDNS source reading
+- Cross-reference against HA device registry (skip known devices)
+- Automatic service-type → category mapping
+- `dry_run` mode for safe preview
+
+**Status:** Planned — not started
+**Dependencies:** Phase 1 ✅, Phase 2 ✅
 
 ---
 

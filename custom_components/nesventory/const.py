@@ -9,13 +9,14 @@ DEFAULT_SCAN_INTERVAL = 60  # seconds
 DEFAULT_TIMEOUT = 10  # seconds
 
 # API Endpoints
-API_ITEMS_ENDPOINT = "/api/v1/items/"
-API_LOCATIONS_ENDPOINT = "/api/v1/locations/"
-API_CATEGORIES_ENDPOINT = "/api/v1/categories/"
+API_AUTH_ENDPOINT = "/api/token"
+API_ITEMS_ENDPOINT = "/api/items/"
+API_LOCATIONS_ENDPOINT = "/api/locations/"
+API_TAGS_ENDPOINT = "/api/tags/"
 
 # API write endpoints (same paths as read, just POST)
-API_ITEMS_CREATE_ENDPOINT = "/api/v1/items/"
-API_LOCATIONS_CREATE_ENDPOINT = "/api/v1/locations/"
+API_ITEMS_CREATE_ENDPOINT = "/api/items/"
+API_LOCATIONS_CREATE_ENDPOINT = "/api/locations/"
 
 # Config entry option keys
 CONF_SCAN_INTERVAL = "scan_interval"

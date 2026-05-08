@@ -8,7 +8,7 @@ A Home Assistant integration for [NesVentory](https://github.com/tokendad/NesVen
 
 ## Features
 
-### ✅ Implemented (v0.2.0)
+### ✅ Implemented (v0.2.1)
 
 #### NesVentory → Home Assistant
 - 📊 **Dashboard Sensors** — Total items, total value, per-category counts, per-location counts
@@ -123,8 +123,9 @@ service: nesventory.sync_ha_areas
 | Phase | Status | Description |
 |---|---|---|
 | **Phase 1** | ✅ Complete | Core sensors, config flow, CI, translations |
-| **Phase 2** | ✅ Complete | Services, options flow, dynamic sensors, unit tests |
-| **Phase 3** | 🔜 Planned | HACS default repo, full test coverage (>80%), README polish |
+| **Phase 2** | ✅ Complete | Services, options flow, dynamic sensors, unit tests (111 tests) |
+| **Phase 2b** | 🔜 Planned | Network discovery services |
+| **Phase 3** | 🔜 Planned | HACS default repo submission |
 
 See [project_dev/phases/](project_dev/phases/) for detailed documentation on each phase.
 

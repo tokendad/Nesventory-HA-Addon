@@ -3,7 +3,7 @@
 **Goal:** Publish the integration to HACS and ensure discoverability.
 
 ## Status: Not Started — depends on Phase 1 + Phase 2
-## Last Updated: 2026-05-04
+## Last Updated: 2026-05-06
 
 ## Dependencies
 - Phase 1 implementation must be complete, including the remaining API verification follow-up items
@@ -51,7 +51,7 @@ Create comprehensive user documentation.
 **Additional Docs:**
 - [ ] `CONTRIBUTING.md` - Does not exist yet; create contribution guidelines
 - [x] `CHANGELOG.md` - Version history exists
-- [ ] `LICENSE` - Does not exist yet; add before HACS release
+- [x] `LICENSE` - MIT license (added in v0.2.0)
 
 ### 3. HACS Requirements Validation
 
@@ -60,9 +60,9 @@ Create comprehensive user documentation.
 ✓ Root: hacs.json
 ✓ Root: custom_components/
 ✓ Root: README.md
+✓ Root: LICENSE (MIT, added v0.2.0)
 - Root: info.md (optional, prettier display in HACS)
 - Root: CONTRIBUTING.md (recommended, currently missing)
-- Root: LICENSE (needed before release, currently missing)
 ```
 
 **Current `hacs.json`:**
@@ -81,7 +81,7 @@ Create comprehensive user documentation.
 
 **manifest.json Validation:**
 - [x] Valid domain name
-- [ ] Update version from `0.0.1` to `0.1.0` for the first release
+- [x] Version updated — currently `0.2.0` (was `0.0.1`; update to `0.1.0` was superseded by Phase 2 release)
 - [x] Working documentation URL
 - [x] Working issue tracker URL
 - [x] Correct `iot_class`
@@ -113,13 +113,13 @@ Create comprehensive user documentation.
 Create `.github/workflows/` for repeatable validation on pull requests.
 
 **Minimum Workflows:**
-- [ ] Hassfest validation workflow
-- [ ] HACS validation workflow
-- [ ] PR lint workflow running at minimum `pylint` and `black --check`
+- [ ] Hassfest validation workflow (full `script.hassfest` — current `validate.yml` does basic manifest JSON check only)
+- [ ] HACS validation workflow (`hacs/action`)
+- [x] PR lint workflow — `.github/workflows/validate.yml` runs `black --check`, `isort --check-only`, `pylint`, and basic manifest JSON validation on push/PR
 
 **Notes:**
-- No project CI workflow is in place yet
-- CI should block obvious metadata and style regressions before release
+- `validate.yml` was added in v0.2.0 and covers code style and basic manifest checks
+- Full hassfest and HACS workflow validation are still needed before release
 
 ### 6. Versioning & Releases
 
@@ -135,12 +135,12 @@ Create `.github/workflows/` for repeatable validation on pull requests.
 - [ ] Attach any necessary assets
 
 **First Release Checklist:**
-- [ ] Version `0.1.0` in `custom_components/nesventory/manifest.json` (currently `0.0.1`)
-- [ ] Complete CHANGELOG.md entry
-- [ ] All Phase 1 features working
-- [ ] Phase 2 scope complete enough for intended first release
+- [x] Version updated — `manifest.json` is currently at `0.2.0`
+- [ ] Complete CHANGELOG.md entry for release version
+- [x] All Phase 1 features working
+- [ ] Phase 2 scope complete enough for intended first release (API verification + test coverage still pending)
 - [ ] Documentation complete
-- [ ] Create Git tag `v0.1.0`
+- [ ] Create Git tag `v0.2.0` (or bump to `v1.0.0` for first public release)
 - [ ] Create GitHub release
 
 ### 7. HACS Submission

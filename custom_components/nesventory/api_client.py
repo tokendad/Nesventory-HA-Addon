@@ -10,11 +10,12 @@ import aiohttp
 from aiohttp import ClientError
 
 from .const import (
-    API_CATEGORIES_ENDPOINT,
+    API_AUTH_ENDPOINT,
     API_ITEMS_CREATE_ENDPOINT,
     API_ITEMS_ENDPOINT,
     API_LOCATIONS_CREATE_ENDPOINT,
     API_LOCATIONS_ENDPOINT,
+    API_TAGS_ENDPOINT,
     DEFAULT_TIMEOUT,
 )
 
@@ -45,43 +46,69 @@ class NesVentoryApiClient:
         self._password = password
         self._session = session
         self._token: str | None = None
+        self._auth_lock: asyncio.Lock = asyncio.Lock()
 
-    async def authenticate(self) -> bool:
+    async def authenticate(self) -> bool:  # pylint: disable=too-many-return-statements
         """Authenticate with NesVentory and obtain bearer token.
+
+        The /api/token endpoint sets the JWT exclusively as an HttpOnly cookie
+        (Set-Cookie: access_token=...) rather than returning it in the JSON body.
+        We extract it from the response cookie so we can use Bearer auth on all
+        subsequent requests, which is more reliable than relying on cookie forwarding.
 
         Returns:
             True if authentication successful, False otherwise
 
         """
-        try:
-            async with asyncio.timeout(DEFAULT_TIMEOUT):
-                url = f"{self._base_url}/api/v1/auth/login"
-                data = {
-                    "username": self._username,
-                    "password": self._password,
-                }
+        async with self._auth_lock:
+            # Another coroutine may have authenticated while we waited for the lock
+            if self._token:
+                return True
+            try:
+                async with asyncio.timeout(DEFAULT_TIMEOUT):
+                    url = f"{self._base_url}{API_AUTH_ENDPOINT}"
+                    data = {
+                        "username": self._username,
+                        "password": self._password,
+                    }
 
-                async with self._session.post(url, json=data) as response:
-                    if response.status == 200:
-                        result = await response.json()
-                        self._token = result.get("access_token")
-                        _LOGGER.debug("Authentication successful")
-                        return True
+                    async with self._session.post(url, data=data) as response:
+                        if response.status != 200:
+                            self._token = None
+                            _LOGGER.error(
+                                "Authentication failed with status %s", response.status
+                            )
+                            return False
 
-                    _LOGGER.error(
-                        "Authentication failed with status %s", response.status
-                    )
-                    return False
+                        # JWT is only in the Set-Cookie header, not the JSON body
+                        cookie = response.cookies.get("access_token")
+                        if cookie:
+                            self._token = cookie.value
+                        else:
+                            result = await response.json()
+                            self._token = result.get("access_token")
 
-        except asyncio.TimeoutError:
-            _LOGGER.error("Timeout during authentication")
-            return False
-        except ClientError as err:
-            _LOGGER.error("Client error during authentication: %s", err)
-            return False
-        except Exception as err:  # pylint: disable=broad-exception-caught
-            _LOGGER.exception("Unexpected error during authentication: %s", err)
-            return False
+                        if self._token:
+                            _LOGGER.debug("Authentication successful")
+                            return True
+
+                        _LOGGER.error(
+                            "Authentication succeeded (HTTP 200) but no token received"
+                        )
+                        return False
+
+            except asyncio.TimeoutError:
+                self._token = None
+                _LOGGER.error("Timeout during authentication")
+                return False
+            except ClientError as err:
+                self._token = None
+                _LOGGER.error("Client error during authentication: %s", err)
+                return False
+            except Exception as err:  # pylint: disable=broad-exception-caught
+                self._token = None
+                _LOGGER.exception("Unexpected error during authentication: %s", err)
+                return False
 
     async def test_connection(self) -> bool:
         """Test connection to NesVentory.
@@ -136,8 +163,8 @@ class NesVentoryApiClient:
             ClientError: On other network errors.
 
         """
-        if not self._token:
-            await self.authenticate()
+        if not self._token and not await self.authenticate():
+            raise ClientError("Authentication failed, cannot perform request")
 
         async with asyncio.timeout(DEFAULT_TIMEOUT):
             async with self._session.get(url, headers=self._get_headers()) as response:
@@ -200,7 +227,7 @@ class NesVentoryApiClient:
             items = await self.get_items()
             total = 0.0
             for item in items:
-                value = item.get("value", 0) or item.get("price", 0) or 0
+                value = item.get("estimated_value") or item.get("purchase_price") or 0
                 total += float(value)
             return total
         except Exception as err:  # pylint: disable=broad-exception-caught
@@ -230,17 +257,17 @@ class NesVentoryApiClient:
             raise
 
     async def get_categories(self) -> list[dict[str, Any]]:
-        """Get all categories from NesVentory.
+        """Get all tags (used as categories) from NesVentory.
 
         Returns:
-            List of category dictionaries
+            List of tag dictionaries
 
         Raises:
             ClientError: If request fails
             asyncio.TimeoutError: On timeout
 
         """
-        url = f"{self._base_url}{API_CATEGORIES_ENDPOINT}"
+        url = f"{self._base_url}{API_TAGS_ENDPOINT}"
         try:
             result = await self._get_json(url)
             return result if isinstance(result, list) else []
@@ -276,8 +303,8 @@ class NesVentoryApiClient:
             asyncio.TimeoutError: On timeout
 
         """
-        if not self._token:
-            await self.authenticate()
+        if not self._token and not await self.authenticate():
+            raise ClientError("Authentication failed, cannot create item")
 
         payload: dict[str, Any] = {
             "name": name,
@@ -327,8 +354,8 @@ class NesVentoryApiClient:
             asyncio.TimeoutError: On timeout
 
         """
-        if not self._token:
-            await self.authenticate()
+        if not self._token and not await self.authenticate():
+            raise ClientError("Authentication failed, cannot create location")
 
         payload = {"name": name}
 

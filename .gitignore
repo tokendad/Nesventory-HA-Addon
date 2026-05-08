@@ -51,3 +51,4 @@ home-assistant_v2.db
 .env
 test_config.yaml
 local_testing/
+project_dev/*.log

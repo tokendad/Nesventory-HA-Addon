@@ -47,18 +47,55 @@ _const.Platform = MagicMock()
 
 _sensor = sys.modules["homeassistant.components.sensor"]
 _sensor.SensorDeviceClass = MagicMock()
-_sensor.SensorEntity = object
 _sensor.SensorStateClass = MagicMock()
 
+
+class _FakeSensorEntity:
+    """Minimal SensorEntity stub — distinct class so sensors can use both bases."""
+
+
+_sensor.SensorEntity = _FakeSensorEntity
+
+
+class _FakeDataUpdateCoordinator:
+    """Minimal DataUpdateCoordinator stub that accepts the same constructor args."""
+
+    last_update_time = None
+
+    def __init__(self, hass, logger, *, name=None, update_interval=None):
+        pass
+
+
+class _FakeCoordinatorEntity:
+    """Minimal CoordinatorEntity stub that stores the coordinator on the instance."""
+
+    last_update_time = None
+
+    def __init__(self, coordinator):
+        self.coordinator = coordinator
+
+
 _coord = sys.modules["homeassistant.helpers.update_coordinator"]
-_coord.DataUpdateCoordinator = object
+_coord.DataUpdateCoordinator = _FakeDataUpdateCoordinator
 _coord.UpdateFailed = Exception
-_coord.CoordinatorEntity = object
+_coord.CoordinatorEntity = _FakeCoordinatorEntity
+
+
+class _FakeConfigFlow:
+    """Minimal ConfigFlow stub that silently accepts domain= keyword in class body."""
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__()
+
+
+class _FakeOptionsFlow:
+    """Minimal OptionsFlow stub."""
+
 
 _cfg = sys.modules["homeassistant.config_entries"]
 _cfg.ConfigEntry = MagicMock
-_cfg.ConfigFlow = object
-_cfg.OptionsFlow = object
+_cfg.ConfigFlow = _FakeConfigFlow
+_cfg.OptionsFlow = _FakeOptionsFlow
 
 _exc = sys.modules["homeassistant.exceptions"]
 _exc.ConfigEntryAuthFailed = Exception
@@ -67,7 +104,7 @@ _exc.HomeAssistantError = Exception
 _sel = sys.modules["homeassistant.helpers.selector"]
 for _cls in ("NumberSelector", "NumberSelectorConfig", "NumberSelectorMode",
              "SelectSelector", "SelectSelectorConfig", "SelectSelectorMode"):
-    setattr(_sel, _cls, MagicMock)
+    setattr(_sel, _cls, MagicMock())
 
 _flow = sys.modules["homeassistant.data_entry_flow"]
 _flow.FlowResult = dict
@@ -102,17 +139,17 @@ def mock_api_client():
             {
                 "id": 1,
                 "name": "Nintendo Switch",
-                "value": 299.99,
+                "estimated_value": "299.99",
                 "status": "Active",
-                "category": "Electronics",
+                "tags": [{"id": "1", "name": "Electronics"}],
                 "location": "Living Room",
             },
             {
                 "id": 2,
                 "name": "AA Batteries (4-pack)",
-                "price": 5.99,
+                "purchase_price": "5.99",
                 "status": "Active",
-                "category": "Supplies",
+                "tags": [{"id": "2", "name": "Supplies"}],
                 "location": "Kitchen",
             },
         ]
@@ -142,17 +179,17 @@ def mock_coordinator_data():
             {
                 "id": 1,
                 "name": "Nintendo Switch",
-                "value": 299.99,
+                "estimated_value": "299.99",
                 "status": "Active",
-                "category": "Electronics",
+                "tags": [{"id": "1", "name": "Electronics"}],
                 "location": "Living Room",
             },
             {
                 "id": 2,
                 "name": "AA Batteries (4-pack)",
-                "price": 5.99,
+                "purchase_price": "5.99",
                 "status": "Active",
-                "category": "Supplies",
+                "tags": [{"id": "2", "name": "Supplies"}],
                 "location": "Kitchen",
             },
         ],

@@ -3,7 +3,7 @@
 **Goal:** Authenticate with NesVentory and expose the core inventory sensors in Home Assistant.
 
 ## Status: Complete
-## Last Updated: 2026-05-04
+## Last Updated: 2026-05-06
 
 ## Objectives
 - [x] Create API client for NesVentory communication
@@ -85,14 +85,16 @@ Create required integration files.
 ## Dependencies
 None (First phase)
 
-## Known Issues / Follow-up for Phase 2
-- [ ] Verify the actual NesVentory authentication endpoint; code still marks `/api/v1/auth/login` as TODO
+## Known Issues / Follow-up (Resolved in Phase 2)
+- [x] Auth endpoint corrected: `POST /api/token` (form-encoded OAuth2)
+- [x] All endpoint paths updated: no `/v1/` prefix
+- [x] Item value field confirmed: `estimated_value` / `purchase_price`
 - [ ] Confirm whether item value should come from `value`, `price`, or another field in the real API response
-- [ ] Add automated unit tests; current validation is manual-only
-- [ ] Create `custom_components/nesventory/services.yaml` before Home Assistant services are introduced
-- [ ] Add an options flow so URL/credentials can be updated after initial setup
-- [ ] Add token expiry retry/re-authentication logic so requests recover automatically after a 401/expired token
-- [ ] Reconcile the initial plan with the current `hacs.json`; `render_readme` is present, but `filename` is not
+- [x] Add automated unit tests — skeleton test files added (`tests/conftest.py`, `tests/test_api_client.py`, `tests/test_coordinator.py`); >80% coverage still pending
+- [x] Create `custom_components/nesventory/services.yaml` before Home Assistant services are introduced — done in v0.2.0
+- [ ] Add an options flow so URL/credentials can be updated after initial setup — an options flow exists for scan interval and tracked sensors, but credential re-configuration is not yet supported
+- [x] Add token expiry retry/re-authentication logic so requests recover automatically after a 401/expired token — done in v0.2.0 via `_get_json()` helper in `api_client.py`
+- [x] Reconcile the initial plan with the current `hacs.json`; `render_readme` is present, but `filename` is not — resolved: `filename` is not required for this integration repository type
 
 ## Notes
 - Phase 1 is functionally complete for the initial integration milestone

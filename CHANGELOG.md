@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-05-08
+
+### Fixed
+- **Sensors unavailable** — `extra_state_attributes` crashed on every state write because
+  `DataUpdateCoordinator` does not expose `last_update_success_time`; replaced with
+  `coordinator.last_update_time` (a `datetime` stored by the coordinator itself)
+- **Auth token never stored** — `/api/token` returns the JWT exclusively as an
+  `HttpOnly` Set-Cookie header, not in the JSON body; `authenticate()` now reads
+  `response.cookies["access_token"]` first and falls back to the JSON body
+- **State class conflict** — HA 2026.x rejects `SensorStateClass.MEASUREMENT` for
+  `SensorDeviceClass.MONETARY`; `TotalValueSensor` now uses `SensorStateClass.TOTAL`
+- **Wrong item value fields** — `coordinator.py` and `sensor.py` referenced `value`/`price`
+  fields that do not exist in the API; corrected to `estimated_value`/`purchase_price`
+- **Wrong category field** — `sensor.py` read `category`/`category_name` which the API
+  does not return; now falls back to the first entry of the `tags` list
+- **Silent auth failure** — `_get_json()`, `create_item()`, and `create_location()` ignored
+  a `False` return from `authenticate()`; they now raise `ClientError` so the coordinator
+  surfaces `UpdateFailed` with a clear message
+- **Concurrent auth races** — three parallel `asyncio.gather` calls could each trigger
+  `authenticate()` simultaneously; an `asyncio.Lock` now serialises token acquisition
+
+### Changed
+- `coordinator.py` — tracks `last_update_time: datetime | None` (UTC), set on every
+  successful `_async_update_data()` call
+- Tests expanded from 106 → 111; all mocks updated to reflect correct API field names
+  and cookie-based auth
+
 ## [0.2.0] - 2025-05-04
 
 ### Phase 2 — Advanced Sensors & Services
@@ -53,6 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Development documentation
 - Project planning and phase breakdown
 
-[Unreleased]: https://github.com/tokendad/Nesventory-HA-Addon/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/tokendad/Nesventory-HA-Addon/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/tokendad/Nesventory-HA-Addon/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/tokendad/Nesventory-HA-Addon/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/tokendad/Nesventory-HA-Addon/releases/tag/v0.1.0

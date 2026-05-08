@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -36,6 +36,7 @@ class NesVentoryDataUpdateCoordinator(
 
         """
         self.client = client
+        self.last_update_time: datetime | None = None
 
         super().__init__(
             hass,
@@ -103,9 +104,12 @@ class NesVentoryDataUpdateCoordinator(
             total_value = 0.0
             if isinstance(items, list):
                 for item in items:
-                    value = item.get("value", 0) or item.get("price", 0) or 0
+                    value = (
+                        item.get("estimated_value") or item.get("purchase_price") or 0
+                    )
                     total_value += float(value)
 
+            self.last_update_time = datetime.now(timezone.utc)
             return {
                 "items": items,
                 "total_count": total_count,

@@ -101,8 +101,15 @@ class NesVentoryTotalItemsSensor(CoordinatorEntity, SensorEntity):
             status = item.get("status", "Unknown") or "Unknown"
             status_counts[status] = status_counts.get(status, 0) + 1
 
-            cat = item.get("category") or item.get("category_name") or "Uncategorized"
-            category_counts[cat] = category_counts.get(cat, 0) + 1
+            cat_name = item.get("category") or item.get("category_name")
+            if not cat_name:
+                tags = item.get("tags") or []
+                cat_name = (
+                    tags[0].get("name")
+                    if tags and isinstance(tags[0], dict)
+                    else "Uncategorized"
+                )
+            category_counts[cat_name] = category_counts.get(cat_name, 0) + 1
 
         top_categories = dict(
             sorted(category_counts.items(), key=lambda x: x[1], reverse=True)[:5]
@@ -111,7 +118,7 @@ class NesVentoryTotalItemsSensor(CoordinatorEntity, SensorEntity):
         return {
             "items_by_status": status_counts,
             "items_by_category": top_categories,
-            "last_update": self.coordinator.last_update_success_time,
+            "last_update": self.coordinator.last_update_time,
         }
 
 
@@ -122,7 +129,7 @@ class NesVentoryTotalValueSensor(CoordinatorEntity, SensorEntity):
     _attr_name = "Total Value"
     _attr_icon = "mdi:cash"
     _attr_device_class = SensorDeviceClass.MONETARY
-    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_state_class = SensorStateClass.TOTAL
     _attr_native_unit_of_measurement = CURRENCY_DOLLAR
 
     def __init__(
@@ -151,9 +158,19 @@ class NesVentoryTotalValueSensor(CoordinatorEntity, SensorEntity):
         items: list[dict[str, Any]] = self.coordinator.data.get("items", [])
         category_values: dict[str, float] = {}
         for item in items:
-            cat = item.get("category") or item.get("category_name") or "Uncategorized"
-            value = float(item.get("value", 0) or item.get("price", 0) or 0)
-            category_values[cat] = category_values.get(cat, 0.0) + value
+            cat_name = item.get("category") or item.get("category_name")
+            if not cat_name:
+                tags = item.get("tags") or []
+                cat_name = (
+                    tags[0].get("name")
+                    if tags and isinstance(tags[0], dict)
+                    else "Uncategorized"
+                )
+            item_value = item.get("estimated_value")
+            if item_value is None:
+                item_value = item.get("purchase_price")
+            value = float(item_value or 0)
+            category_values[cat_name] = category_values.get(cat_name, 0.0) + value
 
         top_by_value = dict(
             sorted(category_values.items(), key=lambda x: x[1], reverse=True)[:5]
@@ -162,7 +179,7 @@ class NesVentoryTotalValueSensor(CoordinatorEntity, SensorEntity):
         return {
             "value_by_category": top_by_value,
             "item_count": self.coordinator.data.get("total_count", 0),
-            "last_update": self.coordinator.last_update_success_time,
+            "last_update": self.coordinator.last_update_time,
         }
 
 
