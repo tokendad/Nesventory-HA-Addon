@@ -213,8 +213,10 @@ class NesVentoryCategorySensor(CoordinatorEntity, SensorEntity):
         return sum(
             1
             for item in items
-            if (item.get("category") or item.get("category_name") or "")
-            == self._category_name
+            if any(
+                tag.get("name") == self._category_name
+                for tag in (item.get("tags") or [])
+            )
         )
 
     @property
@@ -249,12 +251,17 @@ class NesVentoryLocationSensor(CoordinatorEntity, SensorEntity):
         """Return item count for this location."""
         if not self.coordinator.data:
             return 0
+        locations: list[dict[str, Any]] = self.coordinator.data.get("locations", [])
+        loc_id_map: dict[str, str] = {
+            loc["id"]: loc["name"]
+            for loc in locations
+            if loc.get("id") and loc.get("name")
+        }
         items: list[dict[str, Any]] = self.coordinator.data.get("items", [])
         return sum(
             1
             for item in items
-            if (item.get("location") or item.get("location_name") or "")
-            == self._location_name
+            if loc_id_map.get(item.get("location_id", "")) == self._location_name
         )
 
     @property

@@ -228,20 +228,24 @@ class TestCategorySensor:
         assert sensor._attr_unique_id == "abc123_category_smart_home"
 
     def test_native_value_counts_matching_items(self):
-        """Counts items whose category matches."""
+        """Counts items whose tags include the category name."""
         items = [
-            {"category": "Electronics"},
-            {"category": "Electronics"},
-            {"category": "Supplies"},
+            {"tags": [{"name": "Electronics"}]},
+            {"tags": [{"name": "Electronics"}, {"name": "Gadgets"}]},
+            {"tags": [{"name": "Supplies"}]},
+            {"tags": []},
         ]
         sensor = self._make_sensor("Electronics", {"items": items})
         assert sensor.native_value == 2
 
-    def test_native_value_category_name_field(self):
-        """Matches 'category_name' field as fallback."""
-        items = [{"category_name": "Books"}, {"category_name": "Books"}]
-        sensor = self._make_sensor("Books", {"items": items})
-        assert sensor.native_value == 2
+    def test_native_value_no_matching_tags(self):
+        """Returns 0 when no items have the matching tag."""
+        items = [
+            {"tags": [{"name": "Furniture"}]},
+            {"tags": []},
+        ]
+        sensor = self._make_sensor("Electronics", {"items": items})
+        assert sensor.native_value == 0
 
     def test_native_value_no_data(self):
         """Returns 0 when coordinator data is None."""
@@ -275,20 +279,25 @@ class TestLocationSensor:
         assert sensor._attr_unique_id == "abc123_location_living_room"
 
     def test_native_value_counts_matching_items(self):
-        """Counts items whose location matches."""
-        items = [
-            {"location": "Kitchen"},
-            {"location": "Kitchen"},
-            {"location": "Garage"},
+        """Counts items whose location_id resolves to the location name."""
+        locations = [
+            {"id": "loc-1", "name": "Kitchen"},
+            {"id": "loc-2", "name": "Garage"},
         ]
-        sensor = self._make_sensor("Kitchen", {"items": items})
+        items = [
+            {"location_id": "loc-1"},
+            {"location_id": "loc-1"},
+            {"location_id": "loc-2"},
+            {"location_id": None},
+        ]
+        sensor = self._make_sensor("Kitchen", {"items": items, "locations": locations})
         assert sensor.native_value == 2
 
-    def test_native_value_location_name_field(self):
-        """Matches 'location_name' field as fallback."""
-        items = [{"location_name": "Attic"}]
-        sensor = self._make_sensor("Attic", {"items": items})
-        assert sensor.native_value == 1
+    def test_native_value_unknown_location_id(self):
+        """Returns 0 when location_id does not map to the target location."""
+        items = [{"location_id": "unknown-uuid"}]
+        sensor = self._make_sensor("Kitchen", {"items": items, "locations": []})
+        assert sensor.native_value == 0
 
     def test_native_value_no_data(self):
         """Returns 0 when coordinator data is None."""
